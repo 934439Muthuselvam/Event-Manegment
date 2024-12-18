@@ -2,6 +2,12 @@ import Sidebar from "../Components/Home/SIdebar";
 import Navbar from "../Components/Home/Navbar";
 import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
 import Dashboard from "../Components/Dashboard/Dashboard";
+import Home from "../Components/IndexHome/Home";
+import CreateEvent from "../Components/Dashboard/CreateEvent";
+
+import CourierOutput from "../Components/Dashboard/EventOutput";
+import About from "../Components/IndexHome/About";
+import Contact_us from "../Components/IndexHome/Contact_us";
 
 function Layout() {
   return (
@@ -31,12 +37,23 @@ export default function AppRouter() {
         <Routes>
           <Route element={<Layout />}>
           
-            <Route path='/' element={<Dashboard />} />
+            <Route path='/admin' element={<Dashboard />} />
+            <Route path='/create-event' element={<CreateEvent />} />
+            <Route path="/Output" element={<CourierOutput/>}/>
+          
+
             
             
   
             
           </Route>
+
+          <Route path='/' element={<Home />} />
+          <Route path="/about" element={<About/>}/>
+          <Route path="/contact" element={<Contact_us/>}/>
+         
+
+          
         </Routes>
         </BrowserRouter>
       </div>
