@@ -4,10 +4,9 @@ import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
 import Dashboard from "../Components/Dashboard/Dashboard";
 import Home from "../Components/IndexHome/Home";
 import CreateEvent from "../Components/Dashboard/CreateEvent";
-
-import CourierOutput from "../Components/Dashboard/EventOutput";
 import About from "../Components/IndexHome/About";
 import Contact_us from "../Components/IndexHome/Contact_us";
+import EventCards from "../Components/Dashboard/EventOutput";
 
 function Layout() {
   return (
@@ -39,7 +38,7 @@ export default function AppRouter() {
           
             <Route path='/admin' element={<Dashboard />} />
             <Route path='/create-event' element={<CreateEvent />} />
-            <Route path="/Output" element={<CourierOutput/>}/>
+            <Route path="/EventCards" element={<EventCards/>}/>
           
 
             

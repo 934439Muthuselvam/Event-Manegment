@@ -1,13 +1,15 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { apiaddevent } from "../../Shared/authentication/apievent";
+import React, { useState } from 'react';
 
-const CreateEvent = () => {
+
+import { apiaddevent } from '../../Shared/authentication/apievent';
+
+const CreateEvent= () => {
   const [formData, setFormData] = useState({
     title: "",
     country: "",
     state: "",
     city: "",
+    seats:"",
     address: "",  // New address field
     pinCode: "",
     category: "",
@@ -26,27 +28,16 @@ const CreateEvent = () => {
     highlights: [], // For dynamic highlights
   });
 
-  const navigate = useNavigate();
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleChange = (e) => {
-    const { name, value, type, files } = e.target;
-    if (type === "file") {
-      setFormData({
-        ...formData,
-        images: [...formData.images, ...files], // Add all selected files
-      });
-    } else if (name === "highlight") {
-      setFormData({
-        ...formData,
-        highlights: formData.highlights.map((highlight, index) =>
-          index === value.index ? { ...highlight, text: value.text } : highlight
-        ),
-      });
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
   };
-
   const addHighlight = () => {
     setFormData({
       ...formData,
@@ -56,33 +47,49 @@ const CreateEvent = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      const formDataToSend = new FormData();
-      for (const key in formData) {
-        if (Array.isArray(formData[key])) {
-          formData[key].forEach((item, index) => {
-            formDataToSend.append(`${key}[${index}]`, item);
-          });
-        } else {
-          formDataToSend.append(key, formData[key]);
-        }
-      }
+    setErrorMessage(''); // Clear any previous error messages
 
-      const response = await apiaddevent(formDataToSend);
-      console.log(response.message);
-      navigate("/Output");
+    try {
+      const response = await apiaddevent(formData);
+      if (response.success) {
+        setIsSubmitted(true);
+        setFormData({ name: '', email: '', message: '', phone: '' });
+      } else {
+        setErrorMessage('Failed to send the message. Please try again.');
+      }
     } catch (error) {
-      console.error("Error in creating event:", error);
+      console.error(error);
+      setErrorMessage('Something went wrong. Please try again.');
     }
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-100 mt-72">
-      <div className="w-full max-w-3xl p-8 bg-white shadow-lg rounded-lg">
-        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Create Event</h2>
-        <form onSubmit={handleSubmit} className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Existing fields */}
-          <div className="col-span-2">
+    <div className="mb-5">
+  
+      <div className="max-w-lg mx-auto p-6 bg-white rounded-lg shadow-lg">
+        <h2 className="text-2xl font-bold text-center mb-6"></h2>
+
+        {/* Success Message */}
+        {isSubmitted ? (
+          <div className="text-center">
+            <div className="text-green-500 mb-4">
+              Thank you for reaching out! We'll get back to you shortly.
+            </div>
+            <button
+              onClick={() => setIsSubmitted(false)} // Reset the form
+              className="py-2 px-4 bg-blue-500 text-white font-semibold rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              Back to Form
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            {/* Error Message */}
+            {errorMessage && (
+              <div className="text-red-500 text-center mb-4">{errorMessage}</div>
+            )}
+
+<div className="col-span-2">
             <label className="block text-sm font-medium text-gray-700">Event Title</label>
             <input
               type="text"
@@ -106,6 +113,7 @@ const CreateEvent = () => {
               required
             >
               <option value="">Select Category</option>
+              <option value="all">All</option>
               <option value="entertainment">Entertainment</option>
               <option value="education">Education</option>
               <option value="social">Social</option>
@@ -168,7 +176,7 @@ const CreateEvent = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Pin Code</label>
+            <label className="block text-sm font-medium text-gray-700">Zip Code</label>
             <input
               type="text"
               name="pinCode"
@@ -182,7 +190,7 @@ const CreateEvent = () => {
 
           {/* Start and End Dates */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">Start Date</label>
+            <label className="block text-sm font-medium text-gray-700">Event Start Date</label>
             <input
               type="date"
               name="startDate"
@@ -194,7 +202,7 @@ const CreateEvent = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">End Date</label>
+            <label className="block text-sm font-medium text-gray-700">Event End Date</label>
             <input
               type="date"
               name="endDate"
@@ -207,7 +215,7 @@ const CreateEvent = () => {
 
           {/* Start Time */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">Start Time (IST)</label>
+            <label className="block text-sm font-medium text-gray-700">Event Start Time (IST)</label>
             <input
               type="time"
               name="startTime"
@@ -220,7 +228,7 @@ const CreateEvent = () => {
 
           {/* End Time */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">End Time (IST)</label>
+            <label className="block text-sm font-medium text-gray-700">Event End Time (IST)</label>
             <input
               type="time"
               name="endTime"
@@ -285,6 +293,8 @@ const CreateEvent = () => {
                   required
                 />
               </div>
+
+            
             </div>
           </div>
 
@@ -299,10 +309,11 @@ const CreateEvent = () => {
               required
             >
               <option value="">Select Eligibility</option>
-              <option value="child">Family</option>
+              <option value="all">All</option>
+              <option value="Family">Family</option>
               <option value="child">Child</option>
               <option value="women">Women</option>
-              <option value="adults">Adults</option>
+              <option value="men">Men</option>
               <option value="18+">18+</option>
             </select>
           </div>
@@ -320,8 +331,21 @@ const CreateEvent = () => {
             />
           </div>
 
+          <div>
+                <label className="block text-sm font-medium text-gray-700">Avilable Seat</label>
+                <input
+                  type="text"
+                  name="seats"
+                  value={formData.seats}
+                  onChange={handleChange}
+                  placeholder="Enter fee in dollars"
+                  className="w-full mt-1 px-4 py-2 border rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+
           {/* Event Highlights */}
-          <div className="col-span-2">
+          {/* <div className="col-span-2">
             <label className="block text-sm font-medium text-gray-700">Event Highlights</label>
             {formData.highlights.map((highlight, index) => (
               <div key={index} className="flex items-center space-x-2">
@@ -361,7 +385,7 @@ const CreateEvent = () => {
             >
               Add Highlight
             </button>
-          </div>
+          </div> */}
 
           {/* Image Upload */}
           <div className="col-span-2">
@@ -385,7 +409,10 @@ const CreateEvent = () => {
               Create Event
             </button>
           </div>
-        </form>
+
+          
+          </form>
+        )}
       </div>
     </div>
   );

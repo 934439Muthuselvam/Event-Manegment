@@ -1,79 +1,76 @@
 import React, { useEffect, useState } from "react";
 import { apigetevent } from "../../Shared/authentication/apievent";
 
-const CourierOutput = () => {
-  const [events, setEvents] = useState([]); // State for storing event data
-  const [loading, setLoading] = useState(true); // State for loading indicator
-  const [error, setError] = useState(null); // State for error messages
+// Helper function to format dates
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString(); // Formats date as MM/DD/YYYY
+};
 
-  // Fetch events from API
-  const getEvents = async () => {
-    try {
-      setLoading(true); // Set loading state
-      const data = await apigetevent(); // Fetch data from API
-      console.log("Fetched Events:", data); // Debug fetched data
-
-      // If API returns data in a nested object, handle it here
-      if (data && Array.isArray(data)) {
-        setEvents(data); // Set events directly if data is an array
-      } else if (data && data.events) {
-        setEvents(data.events); // Handle nested response
-      } else {
-        console.error("Unexpected data format:", data);
-        setError("Unexpected data format received");
-      }
-    } catch (err) {
-      console.error("Error fetching events:", err); // Log error
-      setError("Failed to load events"); // Set error state
-    } finally {
-      setLoading(false); // Clear loading state
-    }
-  };
+const EventCards = () => {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    getEvents(); // Fetch events on component mount
+    const fetchEvents = async () => {
+      try {
+        const fetchedEvents = await apigetevent();
+        setEvents(fetchedEvents);
+        setLoading(false);
+      } catch (err) {
+        setError("Failed to load events. Please try again later.");
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
   }, []);
 
-  console.log("Current Events State:", events); // Debug events state
+  if (loading) {
+    return <div className="text-center">Loading events...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center text-red-500">{error}</div>;
+  }
 
   return (
-    <div className="flex h-screen">
-      <div className="flex-1 flex bg-gray-100 flex-col">
-       
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {events.map((event) => (
+        <div key={event._id} className="p-4 bg-white rounded-lg shadow-md">
+          <h3 className="text-2xl font-bold mb-2">{event.title}</h3>
 
-          {/* Loading state */}
-          {loading && <p>Loading events...</p>}
+          <div className="text-sm text-gray-600 mb-2">
+            <p><strong>Location:</strong> {event.city}, {event.state}, {event.country}</p>
+            <p><strong>Address:</strong> {event.address}, {event.pinCode}</p>
+            <p><strong>Category:</strong> {event.category}</p>
+          </div>
 
-          {/* Error message */}
-          {error && <p className="text-red-500">{error}</p>}
+          <div className="text-sm text-gray-500 mb-2">
+            <p><strong>Event Start Date:</strong> {formatDate(event.startDate)} <strong>Event End Date:</strong> {formatDate(event.endDate)}</p>
+            <p><strong>Event Start Time:</strong> {event.startTime} <strong>Event End Time:</strong> {event.endTime}</p>
+            <p><strong>Registration Deadline:</strong> {formatDate(event.registerLastDate)}</p>
+          </div>
 
-          {/* Display event cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {events && events.length > 0 ? (
-              events.map((event) => (
-                <div key={event._id} className="bg-white shadow-lg rounded-lg p-4">
-                  <h3 className="text-xl font-semibold mb-2">
-                    {event.title || "Untitled Event"}
-                  </h3>
-                  {/* <p className="text-gray-600 mb-2">
-                    {event.description || "No description available"}
-                  </p> */}
-                  <div className="text-sm text-gray-500">
-                    <p>Date: {event.date || "N/A"}</p>
-                    <p>Time: {event.time || "N/A"}</p>
-                    <p>Location: {event.location || "N/A"}</p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              // Display message if no events are available
-              <p>No events available</p>
-            )}
+          <div className="text-sm text-gray-500 mb-2">
+            <p><strong>Fees:</strong></p>
+            <ul className="list-disc ml-5">
+              <li><strong>Businessmen Fee:</strong> ${event.businessmenFee}</li>
+              <li><strong>General Fee:</strong> ${event.generalFee}</li>
+              <li><strong>Audience Fee:</strong> ${event.audienceFee}</li>
+            </ul>
+          </div>
+
+          <div className="text-sm text-gray-500 mb-2">
+            <p><strong>Description:</strong> {event.description}</p>
+            <p><strong>Eligibility:</strong> {event.eligibility}</p>
+            <li><strong>Avilable Seats:</strong> {event.seats}</li>
           </div>
         </div>
-      </div>
-    
+      ))}
+    </div>
   );
 };
 
-export default CourierOutput;
+export default EventCards;
