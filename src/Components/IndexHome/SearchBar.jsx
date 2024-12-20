@@ -1,46 +1,27 @@
-import React, { useEffect, useState } from "react";
-import { apigetevent } from "../../Shared/authentication/apievent";
-import { format } from "date-fns";
+import React, { useEffect, useState } from 'react';
+import HomeCard from './HomeCard';
+import BookingForm from './BookingForm';
+import BookingConfirmation from './BookingConfirmation';
+import { apigetevent } from '../../Shared/authentication/apievent';
 
 const SearchBar = () => {
-  const [events, setEvents] = useState([]); // State for storing event data
-  const [loading, setLoading] = useState(true); // State for loading indicator
-  const [error, setError] = useState(null); // State for error messages
-  const [filters, setFilters] = useState({
-    title: "",
-    date: "",
-    location: "",
-  });
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({ title: '', location: '' });
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [totalAmount, setTotalAmount] = useState(0);
+  const [isBookingConfirmed, setIsBookingConfirmed] = useState(false);
+  const [isFormVisible, setIsFormVisible] = useState(false); // State to manage form visibility
 
-  const [selectedEvent, setSelectedEvent] = useState(null); // State for selected event
-  const [attendeeType, setAttendeeType] = useState(""); // State for attendee type
-  const [numTickets, setNumTickets] = useState(1); // State for number of tickets
-  const [totalAmount, setTotalAmount] = useState(0); // State for calculated total amount
-  const [isModalOpen, setIsModalOpen] = useState(false); // State to control modal visibility
-  const [bookingConfirmed, setBookingConfirmed] = useState(false); // State for booking confirmation message
-  const [formView, setFormView] = useState("booking"); // State for controlling form view (either 'booking' or 'details')
-
-  const [email, setEmail] = useState(""); // Declare email state here
-
-  // Fetch events from API
   const getEvents = async () => {
     try {
-      setLoading(true); // Set loading state
-      const data = await apigetevent(); // Fetch data from API
-
-      if (data && Array.isArray(data)) {
-        setEvents(data); // Set events directly if data is an array
-      } else if (data && data.events) {
-        setEvents(data.events); // Handle nested response
-      } else {
-        console.error("Unexpected data format:", data);
-        setError("Unexpected data format received");
-      }
-    } catch (err) {
-      console.error("Error fetching events:", err); // Log error
-      setError("Failed to load events"); // Set error state
+      setLoading(true);
+      const data = await apigetevent();
+      setEvents(data.events || data); // Handle data format accordingly
+    } catch (error) {
+      console.error(error);
     } finally {
-      setLoading(false); // Clear loading state
+      setLoading(false);
     }
   };
 
@@ -48,286 +29,83 @@ const SearchBar = () => {
     getEvents(); // Fetch events on component mount
   }, []);
 
-  // Filter events based on search criteria
   const filteredEvents = events.filter((event) => {
     return (
-      (filters.title === "" ||
-        event.title?.toLowerCase().includes(filters.title.toLowerCase())) &&
-      (filters.date === "" || event.date === filters.date) &&
-      (filters.location === "" ||
-        event.location?.toLowerCase().includes(filters.location.toLowerCase()))
+      (filters.title === '' || event.title.toLowerCase().includes(filters.title.toLowerCase())) &&
+      (filters.location === '' || event.location.toLowerCase().includes(filters.location.toLowerCase()))
     );
   });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFilters((prevFilters) => ({ ...prevFilters, [name]: value }));
-  };
-
-  // Handle selecting an event and opening the modal
   const handleEventClick = (event) => {
-    setSelectedEvent(event); // Set the selected event details
-    setAttendeeType(""); // Reset attendee type
-    setNumTickets(1); // Reset number of tickets
-    setTotalAmount(0); // Reset total amount
-    setIsModalOpen(true); // Open the modal
-    setBookingConfirmed(false); // Reset booking confirmation message
-    setFormView("booking"); // Set form to 'booking' initially
+    setSelectedEvent(event);
   };
 
-  // Handle the "Full Details" button click
-  const handleFullDetailsClick = () => {
-    setFormView("details"); // Switch to full details view
+  const calculateTotalAmount = (attendeeType, numTickets) => {
+    let ticketPrice = 0;
+    if (attendeeType === 'Businessman') ticketPrice = selectedEvent.businessmenFee;
+    if (attendeeType === 'General') ticketPrice = selectedEvent.generalFee;
+    if (attendeeType === 'Audience') ticketPrice = selectedEvent.audienceFee;
+
+    setTotalAmount(ticketPrice * numTickets);
   };
 
-  // Handle changes in attendee type
-  const handleAttendeeTypeChange = (e) => {
-    setAttendeeType(e.target.value);
-    calculateTotalAmount(e.target.value, numTickets);
+  const handleBookingSubmit = (email, attendeeType, numTickets) => {
+    setIsBookingConfirmed(true); // Trigger booking confirmation
   };
 
-  // Handle changes in the number of tickets
-  const handleNumTicketsChange = (e) => {
-    setNumTickets(e.target.value);
-    calculateTotalAmount(attendeeType, e.target.value);
+  const handleCloseConfirmation = () => {
+    setIsBookingConfirmed(false); // Close confirmation
   };
 
-  // Calculate the total amount based on attendee type and number of tickets
-  const calculateTotalAmount = (type, tickets) => {
-    const ticketPrice =
-      type === "Audience" ? selectedEvent?.audienceFee : 
-      type === "Businessman" ? selectedEvent?.businessmenFee : 
-      type === "General" ? selectedEvent?.generalFee : 0;
-
-    const total = ticketPrice * tickets;
-    setTotalAmount(total);
+  // Function to show booking form
+  const handleBookNowClick = (event) => {
+    setSelectedEvent(event);
+    setIsFormVisible(true); // Show form
   };
 
-  // Handle email change
-  const handleEmailChange = (e) => {
-    setEmail(e.target.value); // Update the email state
-  };
-
-  // Handle form submission (Booking)
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (email) {
-      setBookingConfirmed(true); // Set booking confirmation message
-      setIsModalOpen(false); // Close the modal after submission
-    } else {
-      alert("Please enter a valid email address.");
-    }
-  };
-
-  // Handle closing the modal
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setBookingConfirmed(false); // Reset confirmation state if modal is closed
-  };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return format(date, "MMMM dd, yyyy"); // formats date like "December 25, 2024"
+  // Function to close booking form
+  const handleCloseForm = () => {
+    setIsFormVisible(false); // Hide form
   };
 
   return (
-    <div className="flex h-screen">
-      <div className="flex-1 flex bg-gray-100 flex-col">
-        <div className="p-6 mt-20 bg-gradient-to-r rounded-md w-full h-screen">
-          {/* Search and Filter Inputs */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            <input
-              type="text"
-              name="title"
-              placeholder="Search by Event Name"
-              value={filters.title}
-              onChange={handleChange}
-              className="w-full p-2 border rounded-md focus:outline-none focus:ring focus:ring-blue-300"
-            />
-            <input
-              type="text"
-              name="location"
-              placeholder="Filter by Location"
-              value={filters.location}
-              onChange={handleChange}
-              className="w-full p-2 border rounded-md focus:outline-none focus:ring focus:ring-blue-300"
-            />
-          </div>
-
-          {/* Loading state */}
-          {loading && <p>Loading events...</p>}
-
-          {/* Error message */}
-          {error && <p className="text-red-500">{error}</p>}
-
-          {/* Display event cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredEvents && filteredEvents.length > 0 ? (
-              filteredEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="bg-white shadow-lg rounded-lg p-4 cursor-pointer"
-                  onClick={() => handleEventClick(event)}
-                >
-                  <div className="flex justify-center py-3 md:py-5">
-                    <img
-                      src={event.imageSrc || "images/teenager-using-tablet-library.jpg"}
-                      alt={event.title || "Event Image"}
-                      className="rounded-2xl"
-                    />
-                  </div>
-
-                  <div className="text-xl md:text-2xl font-bold mb-4">
-                    <h1 className="text-3xl uppercase">{event.title}</h1>
-                  </div>
-
-                  <div className="text-slate-500 mb-4">
-                    <p>Location: {event.city}</p>
-                    <p>Date: {formatDate(event.startDate)}</p>
-                  </div>
-
-                  {/* Buttons */}
-                  <div className="flex justify-between">
-                    <button
-                      className="text-blue-500 hover:text-blue-700"
-                      onClick={handleFullDetailsClick}
-                    >
-                      Full Details
-                    </button>
-                    <button
-                      className="text-green-500 hover:text-blue-500 py-3 cursor-pointer"
-                    >
-                      Book Now
-                    </button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p>No events available</p>
-            )}
-          </div>
-        </div>
-
-        {/* Modal for Showing Event Details and Booking Form */}
-        {isModalOpen && selectedEvent && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-            <div className="bg-white p-6 rounded-lg w-[30%]">
-              <h2 className="text-xl font-bold mb-4 text-center">
-                {formView === "details" ? "Event Details" : "Booking Form"}
-              </h2>
-              {formView === "details" ? (
-                <>
-                  <p><strong>Event:</strong> {selectedEvent.title}</p>
-                  <p><strong>Location:</strong> {selectedEvent.city}</p>
-                  <p><strong>Date:</strong> {formatDate(selectedEvent.startDate)}</p>
-                  <p><strong>Description:</strong> {selectedEvent.description}</p>
-                  <p><strong>Additional Info:</strong> {selectedEvent.additionalInfo}</p>
-                  <button
-                    onClick={() => setFormView("booking")}
-                    className="mt-4 bg-blue-500 text-white py-2 px-4 rounded-md"
-                  >
-                    Back to Booking Form
-                  </button>
-                </>
-              ) : (
-                <>
-                  <p><strong>Event:</strong> {selectedEvent.title}</p>
-                  <p><strong>Location:</strong> {selectedEvent.city}</p>
-                  <p><strong>Date:</strong> {formatDate(selectedEvent.startDate)}</p>
-
-                  <form onSubmit={handleSubmit}>
-                    <div className="mt-4">
-                      <label className="block text-sm">Attendee Type</label>
-                      <select
-                        value={attendeeType}
-                        onChange={handleAttendeeTypeChange}
-                        className="w-full p-2 border rounded-md"
-                      >
-                        <option value="">Select Attendee Type</option>
-                        {selectedEvent?.businessmenFee && (
-                          <option value="Businessman">
-                            Businessman - {selectedEvent.businessmenFee} RS
-                          </option>
-                        )}
-                        {selectedEvent?.generalFee && (
-                          <option value="General">
-                            General - {selectedEvent.generalFee} RS
-                          </option>
-                        )}
-                        {selectedEvent?.audienceFee && (
-                          <option value="Audience">
-                            Audience - {selectedEvent.audienceFee} RS
-                          </option>
-                        )}
-                      </select>
-                    </div>
-
-                    <div className="mt-4">
-                      <label className="block text-sm">Number of Tickets</label>
-                      <input
-                        type="number"
-                        value={numTickets}
-                        onChange={handleNumTicketsChange}
-                        min="1"
-                        className="w-full p-2 border rounded-md"
-                      />
-                    </div>
-
-                    <div className="mt-4">
-                      <label className="block text-sm">Email</label>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={handleEmailChange}
-                        className="w-full p-2 border rounded-md"
-                        placeholder="Enter your email"
-                      />
-                    </div>
-
-                    <div className="mt-4">
-                      <p><strong>Total Amount: </strong>{totalAmount} RS</p>
-                    </div>
-
-                    <div className="mt-6 flex justify-between">
-                      <button
-                        type="submit"
-                        className="bg-blue-500 text-white py-2 px-4 rounded-md"
-                      >
-                        Submit Booking
-                      </button>
-
-                      <button
-                        onClick={closeModal}
-                        className=" bg-red-500 text-white py-2 px-4 rounded-md"
-                      >
-                        Close
-                      </button>
-                    </div>
-                  </form>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Display Confirmation Message */}
-        {bookingConfirmed && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-            <div className="bg-white p-6 rounded-lg w-[30%]">
-              <h2 className="text-xl font-bold mb-4 text-center">Got Your Tickets!</h2>
-              <p className="text-center">
-                Thank you for booking your tickets for the event.
-              </p>
-              <button
-                onClick={closeModal}
-                className="mt-4 bg-blue-500 text-white py-2 px-4 rounded-md"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        )}
+    <div>
+      <div>
+        <input
+          type="text"
+          name="title"
+          placeholder="Search by Event Name"
+          value={filters.title}
+          onChange={(e) => setFilters({ ...filters, title: e.target.value })}
+        />
+        <input
+          type="text"
+          name="location"
+          placeholder="Filter by Location"
+          value={filters.location}
+          onChange={(e) => setFilters({ ...filters, location: e.target.value })}
+        />
       </div>
+
+      {loading && <p>Loading events...</p>}
+      <HomeCard cardData={filteredEvents} onEventClick={handleEventClick} onBookNowClick={handleBookNowClick} />
+
+      {/* Show the booking form if the form visibility is true */}
+      {selectedEvent && isFormVisible && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex justify-center items-center z-50">
+          <BookingForm
+            selectedEvent={selectedEvent}
+            calculateTotalAmount={calculateTotalAmount}
+            onSubmit={handleBookingSubmit}
+            onClose={handleCloseForm} // Close form button
+          />
+        </div>
+      )}
+
+      {/* Show booking confirmation if booking is successful */}
+      {isBookingConfirmed && (
+        <BookingConfirmation eventTitle={selectedEvent.title} onClose={handleCloseConfirmation} />
+      )}
     </div>
   );
 };
