@@ -33,7 +33,7 @@ const Sidebar = () => {
 
         {/* Find Events */}
         <NavLink
-          to="/EventCards"
+          to="/Output"
           className={({ isActive }) =>
             `flex justify-start gap-2 text-2xl font-bold p-2 rounded-lg ${
               isActive ? "bg-blue-500 text-white" : "hover:bg-blue-200"
@@ -46,7 +46,7 @@ const Sidebar = () => {
 
         {/* Events List */}
         <NavLink
-          to="/list"
+          to="/eventlist"
           className={({ isActive }) =>
             `flex justify-start gap-2 text-2xl font-bold p-2 rounded-lg ${
               isActive ? "bg-blue-500 text-white" : "hover:bg-blue-200"

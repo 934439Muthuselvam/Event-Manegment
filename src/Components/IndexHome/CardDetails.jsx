@@ -7,7 +7,7 @@ const formatDate = (dateString) => {
   return date.toLocaleDateString(); // Formats date as MM/DD/YYYY
 };
 
-const EventCards = () => {
+const CardDetails = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -78,6 +78,7 @@ const EventCards = () => {
       ))}
     </div>
   );
+  
 };
 
-export default EventCards;
+export default CardDetails;
