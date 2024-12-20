@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { apigetevent } from "../../Shared/authentication/apievent";
+import { format } from "date-fns";
 
 const SearchBar = () => {
   const [events, setEvents] = useState([]); // State for storing event data
@@ -16,8 +17,10 @@ const SearchBar = () => {
   const [numTickets, setNumTickets] = useState(1); // State for number of tickets
   const [totalAmount, setTotalAmount] = useState(0); // State for calculated total amount
   const [isModalOpen, setIsModalOpen] = useState(false); // State to control modal visibility
-  const [email, setEmail] = useState(""); // State for user's email
   const [bookingConfirmed, setBookingConfirmed] = useState(false); // State for booking confirmation message
+  const [formView, setFormView] = useState("booking"); // State for controlling form view (either 'booking' or 'details')
+
+  const [email, setEmail] = useState(""); // Declare email state here
 
   // Fetch events from API
   const getEvents = async () => {
@@ -67,9 +70,14 @@ const SearchBar = () => {
     setAttendeeType(""); // Reset attendee type
     setNumTickets(1); // Reset number of tickets
     setTotalAmount(0); // Reset total amount
-    setEmail(""); // Reset email
     setIsModalOpen(true); // Open the modal
     setBookingConfirmed(false); // Reset booking confirmation message
+    setFormView("booking"); // Set form to 'booking' initially
+  };
+
+  // Handle the "Full Details" button click
+  const handleFullDetailsClick = () => {
+    setFormView("details"); // Switch to full details view
   };
 
   // Handle changes in attendee type
@@ -86,14 +94,18 @@ const SearchBar = () => {
 
   // Calculate the total amount based on attendee type and number of tickets
   const calculateTotalAmount = (type, tickets) => {
-    const ticketPrice = type === "Audience" ? 200 : type === "Businessman" ? 500 : 0;
+    const ticketPrice =
+      type === "Audience" ? selectedEvent?.audienceFee : 
+      type === "Businessman" ? selectedEvent?.businessmenFee : 
+      type === "General" ? selectedEvent?.generalFee : 0;
+
     const total = ticketPrice * tickets;
     setTotalAmount(total);
   };
 
   // Handle email change
   const handleEmailChange = (e) => {
-    setEmail(e.target.value);
+    setEmail(e.target.value); // Update the email state
   };
 
   // Handle form submission (Booking)
@@ -111,6 +123,11 @@ const SearchBar = () => {
   const closeModal = () => {
     setIsModalOpen(false);
     setBookingConfirmed(false); // Reset confirmation state if modal is closed
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return format(date, "MMMM dd, yyyy"); // formats date like "December 25, 2024"
   };
 
   return (
@@ -165,13 +182,23 @@ const SearchBar = () => {
                   </div>
 
                   <div className="text-slate-500 mb-4">
-                    <p>Location: {event.location}</p>
-                    <p>Date: {event.date}</p>
+                    <p>Location: {event.city}</p>
+                    <p>Date: {formatDate(event.startDate)}</p>
                   </div>
 
-                  {/* Book Now Link */}
-                  <div className="text-green-500 hover:text-blue-500 py-3 cursor-pointer">
-                    <p>Book Now</p>
+                  {/* Buttons */}
+                  <div className="flex justify-between">
+                    <button
+                      className="text-blue-500 hover:text-blue-700"
+                      onClick={handleFullDetailsClick}
+                    >
+                      Full Details
+                    </button>
+                    <button
+                      className="text-green-500 hover:text-blue-500 py-3 cursor-pointer"
+                    >
+                      Book Now
+                    </button>
                   </div>
                 </div>
               ))
@@ -181,71 +208,104 @@ const SearchBar = () => {
           </div>
         </div>
 
-        {/* Modal for Booking Form */}
-        {isModalOpen && selectedEvent && !bookingConfirmed && (
+        {/* Modal for Showing Event Details and Booking Form */}
+        {isModalOpen && selectedEvent && (
           <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <div className="bg-white p-6 rounded-lg w-[30%]">
-              <h2 className="text-xl font-bold mb-4 text-center">Booking Form</h2>
-              <p><strong>Event:</strong> {selectedEvent.title}</p>
-              <p><strong>Location:</strong> {selectedEvent.location}</p>
-              <p><strong>Date:</strong> {selectedEvent.date}</p>
-
-              <form onSubmit={handleSubmit}>
-                <div className="mt-4">
-                  <label className="block text-sm">Attendee Type</label>
-                  <select
-                    value={attendeeType}
-                    onChange={handleAttendeeTypeChange}
-                    className="w-full p-2 border rounded-md"
-                  >
-                    <option value="">Select Attendee Type</option>
-                    <option value="Audience">Audience - 200 RS</option>
-                    <option value="Businessman">Businessman - 500 RS</option>
-                  </select>
-                </div>
-
-                <div className="mt-4">
-                  <label className="block text-sm">Number of Tickets</label>
-                  <input
-                    type="number"
-                    value={numTickets}
-                    onChange={handleNumTicketsChange}
-                    min="1"
-                    className="w-full p-2 border rounded-md"
-                  />
-                </div>
-
-                <div className="mt-4">
-                  <label className="block text-sm">Email</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={handleEmailChange}
-                    className="w-full p-2 border rounded-md"
-                    placeholder="Enter your email"
-                  />
-                </div>
-
-                <div className="mt-4">
-                  <p><strong>Total Amount: </strong>{totalAmount} RS</p>
-                </div>
-
-                <div className="mt-6 flex justify-between">
+              <h2 className="text-xl font-bold mb-4 text-center">
+                {formView === "details" ? "Event Details" : "Booking Form"}
+              </h2>
+              {formView === "details" ? (
+                <>
+                  <p><strong>Event:</strong> {selectedEvent.title}</p>
+                  <p><strong>Location:</strong> {selectedEvent.city}</p>
+                  <p><strong>Date:</strong> {formatDate(selectedEvent.startDate)}</p>
+                  <p><strong>Description:</strong> {selectedEvent.description}</p>
+                  <p><strong>Additional Info:</strong> {selectedEvent.additionalInfo}</p>
                   <button
-                    type="submit"
-                    className="bg-blue-500 text-white py-2 px-4 rounded-md"
+                    onClick={() => setFormView("booking")}
+                    className="mt-4 bg-blue-500 text-white py-2 px-4 rounded-md"
                   >
-                    Submit Booking
+                    Back to Booking Form
                   </button>
+                </>
+              ) : (
+                <>
+                  <p><strong>Event:</strong> {selectedEvent.title}</p>
+                  <p><strong>Location:</strong> {selectedEvent.city}</p>
+                  <p><strong>Date:</strong> {formatDate(selectedEvent.startDate)}</p>
 
-                  <button
-                    onClick={closeModal}
-                    className=" bg-red-500 text-white py-2 px-4 rounded-md"
-                  >
-                    Close
-                  </button>
-                </div>
-              </form>
+                  <form onSubmit={handleSubmit}>
+                    <div className="mt-4">
+                      <label className="block text-sm">Attendee Type</label>
+                      <select
+                        value={attendeeType}
+                        onChange={handleAttendeeTypeChange}
+                        className="w-full p-2 border rounded-md"
+                      >
+                        <option value="">Select Attendee Type</option>
+                        {selectedEvent?.businessmenFee && (
+                          <option value="Businessman">
+                            Businessman - {selectedEvent.businessmenFee} RS
+                          </option>
+                        )}
+                        {selectedEvent?.generalFee && (
+                          <option value="General">
+                            General - {selectedEvent.generalFee} RS
+                          </option>
+                        )}
+                        {selectedEvent?.audienceFee && (
+                          <option value="Audience">
+                            Audience - {selectedEvent.audienceFee} RS
+                          </option>
+                        )}
+                      </select>
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="block text-sm">Number of Tickets</label>
+                      <input
+                        type="number"
+                        value={numTickets}
+                        onChange={handleNumTicketsChange}
+                        min="1"
+                        className="w-full p-2 border rounded-md"
+                      />
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="block text-sm">Email</label>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={handleEmailChange}
+                        className="w-full p-2 border rounded-md"
+                        placeholder="Enter your email"
+                      />
+                    </div>
+
+                    <div className="mt-4">
+                      <p><strong>Total Amount: </strong>{totalAmount} RS</p>
+                    </div>
+
+                    <div className="mt-6 flex justify-between">
+                      <button
+                        type="submit"
+                        className="bg-blue-500 text-white py-2 px-4 rounded-md"
+                      >
+                        Submit Booking
+                      </button>
+
+                      <button
+                        onClick={closeModal}
+                        className=" bg-red-500 text-white py-2 px-4 rounded-md"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </form>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -255,7 +315,9 @@ const SearchBar = () => {
           <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <div className="bg-white p-6 rounded-lg w-[30%]">
               <h2 className="text-xl font-bold mb-4 text-center">Got Your Tickets!</h2>
-              <p className="text-center">Thank you for booking your tickets for the event.</p>
+              <p className="text-center">
+                Thank you for booking your tickets for the event.
+              </p>
               <button
                 onClick={closeModal}
                 className="mt-4 bg-blue-500 text-white py-2 px-4 rounded-md"
