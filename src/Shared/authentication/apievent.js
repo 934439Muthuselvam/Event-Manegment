@@ -14,7 +14,7 @@ export const apiaddevent = async (datas) => {
   eventForm.append("city", datas.city);
   eventForm.append("seats", datas.seats);
   eventForm.append("address", datas.address);
-  eventForm.append("pinCode", datas.pinCode);
+  eventForm.append("pinCode", datas.pinCode); 
   eventForm.append("category", datas.category);
   eventForm.append("startDate", datas.startDate);
   eventForm.append("endDate", datas.endDate);
